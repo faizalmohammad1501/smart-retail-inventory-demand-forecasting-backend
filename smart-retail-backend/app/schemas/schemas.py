@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, validator
-from typing import Optional
+from pydantic import BaseModel, Field, field_validator, EmailStr
+from typing import Optional, Literal
 from datetime import datetime
 
 # ============= User Schemas =============
@@ -7,22 +7,72 @@ class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=100)
     email: str = Field(..., min_length=5, max_length=255)
     full_name: Optional[str] = None
-    role: str = \"user\"
+    role: str = "user"
+
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        return v
+
 
 class UserLogin(BaseModel):
     username: str
     password: str
 
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = Field(None, min_length=5, max_length=255)
+
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        return v
+
+
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    last_login: Optional[datetime] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
+
+
+# ============= JWT / Token Schemas =============
+class Token(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int  # access token TTL in seconds
+
+
+class TokenRefresh(BaseModel):
+    refresh_token: str
+
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    user_id: Optional[int] = None
+    role: Optional[str] = None
 
 # ============= Supplier Schemas =============
 class SupplierBase(BaseModel):

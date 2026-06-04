@@ -3,12 +3,17 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any
 
 from app.database.connection import get_db
+from app.models.user import User
 from app.services.order_service import OrderService
+from app.core.dependencies import get_current_active_user
 
 router = APIRouter(prefix="/api/forecast", tags=["Forecast & Analytics"])
 
 @router.get("/overview")
-def get_forecast_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:
+def get_forecast_overview(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_active_user),
+) -> Dict[str, Any]:
     """
     Get overall analytics and forecast overview.
     Provides summary of order performance, SLA compliance, and bottlenecks.
@@ -29,7 +34,10 @@ def get_forecast_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:
         )
 
 @router.get("/bottleneck-analysis")
-def get_bottleneck_analysis(db: Session = Depends(get_db)) -> Dict[str, Any]:
+def get_bottleneck_analysis(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_active_user),
+) -> Dict[str, Any]:
     """
     Detailed bottleneck analysis across all orders.
     Identifies stages causing most delays.
@@ -61,7 +69,10 @@ def get_bottleneck_analysis(db: Session = Depends(get_db)) -> Dict[str, Any]:
         )
 
 @router.get("/sla-compliance")
-def get_sla_compliance(db: Session = Depends(get_db)) -> Dict[str, Any]:
+def get_sla_compliance(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_active_user),
+) -> Dict[str, Any]:
     """
     SLA compliance analysis.
     Provides breach statistics and compliance rates.

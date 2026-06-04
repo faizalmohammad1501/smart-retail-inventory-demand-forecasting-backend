@@ -3,13 +3,19 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database.connection import get_db
+from app.models.user import User
 from app.schemas.schemas import ProductCreate, ProductResponse
 from app.services.product_service import ProductService
+from app.core.dependencies import get_current_active_user, require_roles
 
 router = APIRouter(prefix="/api/products", tags=["Products"])
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
-def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+def create_product(
+    product: ProductCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("admin", "manager")),
+):
     """Create new product"""
     try:
         service = ProductService(db)
@@ -35,14 +41,15 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db)):
 def get_all_products(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_active_user),
 ):
     """Retrieve all products with pagination"""
     service = ProductService(db)
     return service.get_all_products(skip=skip, limit=limit)
 
 @router.get("/{product_id}", response_model=ProductResponse)
-def get_product(product_id: int, db: Session = Depends(get_db)):
+def get_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_active_user)):
     """Retrieve product by ID"""
     service = ProductService(db)
     product = service.get_product_by_id(product_id)
@@ -54,7 +61,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     return product
 
 @router.get("/sku/{sku}", response_model=ProductResponse)
-def get_product_by_sku(sku: str, db: Session = Depends(get_db)):
+def get_product_by_sku(sku: str, db: Session = Depends(get_db), _: User = Depends(get_current_active_user)):
     """Retrieve product by SKU"""
     service = ProductService(db)
     product = service.get_product_by_sku(sku)
@@ -66,13 +73,13 @@ def get_product_by_sku(sku: str, db: Session = Depends(get_db)):
     return product
 
 @router.get("/category/{category}", response_model=List[ProductResponse])
-def get_products_by_category(category: str, db: Session = Depends(get_db)):
+def get_products_by_category(category: str, db: Session = Depends(get_db), _: User = Depends(get_current_active_user)):
     """Retrieve products by category"""
     service = ProductService(db)
     return service.get_products_by_category(category)
 
 @router.delete("/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db)):
+def delete_product(product_id: int, db: Session = Depends(get_db), _: User = Depends(require_roles("admin"))):
     """Delete product by ID"""
     service = ProductService(db)
     if not service.delete_product(product_id):

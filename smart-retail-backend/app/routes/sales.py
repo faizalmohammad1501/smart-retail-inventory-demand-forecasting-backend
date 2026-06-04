@@ -4,14 +4,20 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.database.connection import get_db
+from app.models.user import User
 from app.schemas.schemas import OrderCreate, OrderResponse, OrderAnalytics
 from app.services.order_service import OrderService
 from app.utils.lifecycle_validator import LifecycleValidationError
+from app.core.dependencies import get_current_active_user, require_roles
 
 router = APIRouter(prefix="/api/orders", tags=["Orders"])
 
 @router.post("/", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
-def create_order(order: OrderCreate, db: Session = Depends(get_db)):
+def create_order(
+    order: OrderCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("admin", "manager")),
+):
     """
     Create new order with automated analytics processing.
     Calculates durations, validates SLA, and detects bottlenecks.
@@ -44,14 +50,15 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
 def get_all_orders(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_active_user),
 ):
     """Retrieve all orders with pagination"""
     service = OrderService(db)
     return service.get_all_orders(skip=skip, limit=limit)
 
 @router.get("/{order_id}", response_model=OrderResponse)
-def get_order(order_id: int, db: Session = Depends(get_db)):
+def get_order(order_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_active_user)):
     """Retrieve order by ID"""
     service = OrderService(db)
     order = service.get_order_by_id(order_id)
@@ -63,7 +70,7 @@ def get_order(order_id: int, db: Session = Depends(get_db)):
     return order
 
 @router.get("/by-number/{order_number}", response_model=OrderResponse)
-def get_order_by_number(order_number: str, db: Session = Depends(get_db)):
+def get_order_by_number(order_number: str, db: Session = Depends(get_db), _: User = Depends(get_current_active_user)):
     """Retrieve order by order number"""
     service = OrderService(db)
     order = service.get_order_by_number(order_number)
@@ -75,19 +82,19 @@ def get_order_by_number(order_number: str, db: Session = Depends(get_db)):
     return order
 
 @router.get("/status/{status}", response_model=List[OrderResponse])
-def get_orders_by_status(status: str, db: Session = Depends(get_db)):
+def get_orders_by_status(status: str, db: Session = Depends(get_db), _: User = Depends(get_current_active_user)):
     """Retrieve orders by status"""
     service = OrderService(db)
     return service.get_orders_by_status(status)
 
 @router.get("/analytics/sla-breaches", response_model=List[OrderResponse])
-def get_sla_breach_orders(db: Session = Depends(get_db)):
+def get_sla_breach_orders(db: Session = Depends(get_db), _: User = Depends(get_current_active_user)):
     """Retrieve all orders with SLA breaches"""
     service = OrderService(db)
     return service.get_orders_with_sla_breach()
 
 @router.get("/analytics/bottleneck/{stage}", response_model=List[OrderResponse])
-def get_orders_by_bottleneck(stage: str, db: Session = Depends(get_db)):
+def get_orders_by_bottleneck(stage: str, db: Session = Depends(get_db), _: User = Depends(get_current_active_user)):
     """Retrieve orders by bottleneck stage"""
     service = OrderService(db)
     return service.get_orders_by_bottleneck(stage)
@@ -99,7 +106,8 @@ def get_analytics_summary(
     status: Optional[str] = None,
     product_id: Optional[int] = None,
     supplier_id: Optional[int] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_active_user),
 ):
     """Get analytics summary with optional filters"""
     service = OrderService(db)
@@ -119,7 +127,8 @@ def get_analytics_summary(
 def update_order_status(
     order_id: int,
     status: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("admin", "manager")),
 ):
     """Update order status"""
     service = OrderService(db)
@@ -132,7 +141,7 @@ def update_order_status(
     return {"message": "Order status updated", "order_id": order_id, "status": status}
 
 @router.delete("/{order_id}")
-def delete_order(order_id: int, db: Session = Depends(get_db)):
+def delete_order(order_id: int, db: Session = Depends(get_db), _: User = Depends(require_roles("admin"))):
     """Delete order by ID"""
     service = OrderService(db)
     if not service.delete_order(order_id):
