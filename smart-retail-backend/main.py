@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.database.db_init import init_db
 from app.routes import sales, suppliers, inventory, forecast, auth
+from app.routes import ml_pipeline
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,6 +39,7 @@ app.include_router(sales.router)
 app.include_router(suppliers.router)
 app.include_router(inventory.router)
 app.include_router(forecast.router)
+app.include_router(ml_pipeline.router)
 
 @app.get("/", status_code=status.HTTP_200_OK)
 def root():
