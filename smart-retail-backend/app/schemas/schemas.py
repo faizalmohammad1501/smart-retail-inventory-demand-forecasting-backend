@@ -278,3 +278,95 @@ class FeaturePreviewResponse(BaseModel):
     feature_columns: List[str]
     preview: List[Dict[str, Any]]
 
+
+# ============= Prediction / Forecasting Schemas =============
+
+class ForecastRequest(BaseModel):
+    """Request body for a single-product or batch forecast."""
+    product_id: Optional[int] = Field(
+        default=None,
+        description="Product to forecast. Omit for all-products batch forecast.",
+    )
+    horizon_days: int = Field(
+        default=30, ge=1, le=90,
+        description="Number of calendar days to forecast ahead (1–90).",
+    )
+
+
+class TrainModelRequest(BaseModel):
+    """Optional hyperparameter overrides for model training."""
+    n_estimators: Optional[int] = Field(default=None, ge=50, le=1000)
+    learning_rate: Optional[float] = Field(default=None, gt=0, le=1.0)
+    max_depth: Optional[int] = Field(default=None, ge=2, le=10)
+
+
+class DayForecastSchema(BaseModel):
+    date: str
+    predicted_demand: float
+    lower_bound: float
+    upper_bound: float
+    confidence_score: float
+
+
+class InventoryStatusSchema(BaseModel):
+    current_stock: int
+    reserved_stock: int
+    available_stock: int
+    reorder_level: int
+    stock_status: str
+    days_of_stock_remaining: float
+
+
+class ForecastSummarySchema(BaseModel):
+    avg_predicted_demand_per_day: float
+    total_predicted_demand: float
+    recommended_stock_level: float
+    safety_stock: float
+
+
+class ProductForecastResponse(BaseModel):
+    product_id: int
+    product_name: str
+    category: str
+    sku: str
+    model_used: str
+    horizon_days: int
+    forecast_generated_at: str
+    summary: ForecastSummarySchema
+    inventory: InventoryStatusSchema
+    daily_forecasts: List[DayForecastSchema]
+
+
+class BatchForecastResponse(BaseModel):
+    status: str
+    horizon_days: int
+    model_used: str
+    total_products: int
+    forecasted: int
+    failed: int
+    errors: List[Dict[str, Any]]
+    forecasts: List[Dict[str, Any]]
+    generated_at: str
+
+
+class TrainModelResponse(BaseModel):
+    success: bool
+    message: str
+    trained_at: str
+    n_train_samples: int
+    n_val_samples: int
+    n_features: int
+    model_path: str
+    train_metrics: Optional[Dict[str, Any]] = None
+    val_metrics: Optional[Dict[str, Any]] = None
+
+
+class ModelStatusResponse(BaseModel):
+    model_trained: bool
+    model_type: Optional[str] = None
+    trained_at: Optional[str] = None
+    n_features: Optional[int] = None
+    n_train_samples: Optional[int] = None
+    val_metrics: Optional[Dict[str, Any]] = None
+    message: str
+

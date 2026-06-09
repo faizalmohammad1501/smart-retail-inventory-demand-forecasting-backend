@@ -128,6 +128,9 @@ SYNTHETIC_PRODUCTS: int = 20
 SYNTHETIC_DAYS: int = 365              # 1 year of daily history
 SYNTHETIC_SEED: int = 42
 
+# Days of history to load for lag/rolling features at prediction time
+LOOKBACK_DAYS: int = 60
+
 # ─────────────────────────────────────────────
 # Scaler / encoder artefact names
 # ─────────────────────────────────────────────
