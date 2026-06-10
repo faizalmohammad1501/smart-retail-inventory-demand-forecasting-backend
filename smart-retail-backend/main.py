@@ -7,6 +7,7 @@ from app.routes import sales, suppliers, inventory, forecast, auth
 from app.routes import ml_pipeline
 from app.routes import analytics_routes
 from app.routes import prediction
+from app.routes import inventory_recommendations
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,6 +45,7 @@ app.include_router(forecast.router)
 app.include_router(ml_pipeline.router)
 app.include_router(analytics_routes.router)
 app.include_router(prediction.router)
+app.include_router(inventory_recommendations.router)
 
 @app.get("/", status_code=status.HTTP_200_OK)
 def root():

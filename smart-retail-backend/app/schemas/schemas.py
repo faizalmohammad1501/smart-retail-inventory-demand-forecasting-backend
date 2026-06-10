@@ -370,3 +370,93 @@ class ModelStatusResponse(BaseModel):
     val_metrics: Optional[Dict[str, Any]] = None
     message: str
 
+
+# ============= Inventory Recommendation Schemas =============
+
+class RecommendationSummary(BaseModel):
+    total_products: int
+    out_of_stock: int
+    critical: int
+    high: int
+    medium: int
+    low: int
+    require_immediate_reorder: int
+    require_reorder_soon: int
+    avg_stockout_risk_score: float
+    estimated_total_reorder_value: float
+
+
+class ProductRecommendation(BaseModel):
+    product_id: int
+    product_name: str
+    sku: str
+    category: Optional[str] = None
+    unit_price: float
+    supplier_id: Optional[int] = None
+    current_stock: int
+    reserved_stock: int
+    available_stock: int
+    reorder_level: int
+    last_restocked: Optional[str] = None
+    avg_daily_demand: float
+    std_daily_demand: float
+    total_orders_last_30d: int
+    total_qty_sold_last_30d: int
+    lead_time_days: float
+    safety_stock: float
+    reorder_point: float
+    reorder_quantity: int
+    estimated_reorder_value: float
+    days_of_stock_remaining: float
+    stockout_risk_score: float
+    estimated_stockout_date: Optional[str] = None
+    priority: str
+    action: str
+
+
+class AllRecommendationsResponse(BaseModel):
+    generated_at: str
+    total_products: int
+    summary: RecommendationSummary
+    recommendations: List[Dict[str, Any]]
+
+
+class InventoryHealthResponse(BaseModel):
+    generated_at: str
+    kpis: RecommendationSummary
+    by_category: List[Dict[str, Any]]
+    by_priority: List[Dict[str, Any]]
+
+
+class CriticalAlertsResponse(BaseModel):
+    generated_at: str
+    total_alerts: int
+    alerts: List[Dict[str, Any]]
+
+
+class SupplierInfoSchema(BaseModel):
+    supplier_name: str
+    contact_person: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    rating: Optional[int] = None
+
+
+class ReplenishmentItemSchema(BaseModel):
+    product_id: int
+    product_name: str
+    sku: str
+    reorder_quantity: int
+    estimated_reorder_value: float
+    priority: str
+    action: str
+    supplier_id: Optional[int] = None
+    supplier_info: Optional[SupplierInfoSchema] = None
+
+
+class ReplenishmentListResponse(BaseModel):
+    generated_at: str
+    total_items_to_reorder: int
+    estimated_total_reorder_value: float
+    replenishment_list: List[Dict[str, Any]]
+
