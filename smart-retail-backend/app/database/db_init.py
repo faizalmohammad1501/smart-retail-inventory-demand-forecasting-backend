@@ -4,6 +4,7 @@ from app.models.supplier import Supplier
 from app.models.product import Product
 from app.models.inventory import Inventory
 from app.models.sales import Order
+from app.models.notification import Notification
 
 def init_db():
     """Initialize database tables"""

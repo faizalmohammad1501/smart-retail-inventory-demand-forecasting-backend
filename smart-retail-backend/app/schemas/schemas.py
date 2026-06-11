@@ -460,3 +460,46 @@ class ReplenishmentListResponse(BaseModel):
     estimated_total_reorder_value: float
     replenishment_list: List[Dict[str, Any]]
 
+
+# ============= Notification Schemas =============
+
+class NotificationSchema(BaseModel):
+    id: int
+    category: str
+    priority: str
+    title: str
+    message: str
+    product_id: Optional[int] = None
+    product_name: Optional[str] = None
+    supplier_id: Optional[int] = None
+    order_id: Optional[int] = None
+    metric_value: Optional[float] = None
+    metric_label: Optional[str] = None
+    is_read: bool
+    is_resolved: bool
+    resolved_at: Optional[str] = None
+    created_at: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class NotificationListResponse(BaseModel):
+    total: int
+    skip: int
+    limit: int
+    notifications: List[NotificationSchema]
+
+
+class NotificationSummaryResponse(BaseModel):
+    total_active: int
+    total_unread: int
+    by_category: Dict[str, int]
+    by_priority: Dict[str, int]
+
+
+class AlertRunResponse(BaseModel):
+    run_at: str
+    total_created: int
+    notifications: List[Dict[str, Any]]
+
