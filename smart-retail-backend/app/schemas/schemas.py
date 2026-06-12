@@ -503,3 +503,305 @@ class AlertRunResponse(BaseModel):
     total_created: int
     notifications: List[Dict[str, Any]]
 
+
+# ============= Reporting & Business Insights Schemas =============
+
+# --- Sales ---
+class SalesSummaryResponse(BaseModel):
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    filters_applied: Optional[Dict[str, Any]] = None
+    total_orders: int
+    delivered_orders: int
+    cancelled_orders: int
+    pending_orders: int
+    processing_orders: int
+    shipped_orders: int
+    total_revenue: float
+    avg_order_value: float
+    max_order_value: float
+    min_order_value: float
+    total_units_sold: int
+    fulfillment_rate: float
+    cancellation_rate: float
+    generated_at: str
+
+
+class RevenueTrendPoint(BaseModel):
+    period: str
+    orders: int
+    revenue: float
+    units_sold: int
+    avg_order_value: float
+    delivered_orders: int
+    fulfillment_rate: float
+
+
+class RevenueTrendsResponse(BaseModel):
+    granularity: str
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    total_points: int
+    total_revenue: float
+    data: List[RevenueTrendPoint]
+    generated_at: str
+
+
+class TopProductItem(BaseModel):
+    product_id: int
+    product_name: str
+    sku: str
+    category: Optional[str] = None
+    unit_price: float
+    total_orders: int
+    total_units_sold: int
+    total_revenue: float
+    avg_unit_price: float
+    revenue_share_pct: float
+
+
+class TopProductsResponse(BaseModel):
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    top_n: int
+    sort_by: str
+    total_revenue_in_period: float
+    products: List[TopProductItem]
+    generated_at: str
+
+
+class CategoryRevenueItem(BaseModel):
+    category: str
+    total_orders: int
+    total_units_sold: int
+    total_revenue: float
+    avg_order_value: float
+    revenue_share_pct: float
+    product_count: int
+
+
+class CategoryRevenueResponse(BaseModel):
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    total_revenue: float
+    total_categories: int
+    categories: List[CategoryRevenueItem]
+    generated_at: str
+
+
+class FulfillmentStatsResponse(BaseModel):
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    total_orders: int
+    status_breakdown: Dict[str, int]
+    fulfillment_rate: float
+    cancellation_rate: float
+    on_time_delivery_rate: float
+    sla_breach_count: int
+    avg_total_time_hours: float
+    avg_procurement_time_hours: float
+    avg_processing_time_hours: float
+    avg_dispatch_time_hours: float
+    avg_delivery_time_hours: float
+    generated_at: str
+
+
+# --- Inventory ---
+class InventoryValuationItem(BaseModel):
+    product_id: int
+    product_name: str
+    sku: str
+    category: Optional[str] = None
+    unit_price: float
+    quantity_available: int
+    quantity_reserved: int
+    total_available_value: float
+    total_reserved_value: float
+    total_value: float
+    warehouse_location: Optional[str] = None
+    last_restocked: Optional[str] = None
+
+
+class InventoryCategoryValue(BaseModel):
+    category: str
+    total_value: float
+    value_share_pct: float
+
+
+class InventoryValuationResponse(BaseModel):
+    generated_at: str
+    total_sku_count: int
+    total_available_value: float
+    total_reserved_value: float
+    grand_total_value: float
+    by_category: List[InventoryCategoryValue]
+    items: List[InventoryValuationItem]
+
+
+class TurnoverItem(BaseModel):
+    product_id: int
+    product_name: str
+    sku: str
+    category: Optional[str] = None
+    units_sold_period: int
+    avg_stock_on_hand: float
+    turnover_ratio: float
+    days_to_sell: Optional[float] = None
+
+
+class InventoryTurnoverResponse(BaseModel):
+    period_start: str
+    period_end: str
+    period_days: int
+    avg_turnover_ratio: float
+    total_products: int
+    generated_at: str
+    items: List[TurnoverItem]
+
+
+class AgingItem(BaseModel):
+    product_id: int
+    product_name: str
+    sku: str
+    category: Optional[str] = None
+    quantity_available: int
+    unit_price: float
+    stock_value: float
+    last_restocked: Optional[str] = None
+    days_since_restock: Optional[int] = None
+    days_since_last_order: Optional[int] = None
+    aging_status: str
+
+
+class InventoryAgingResponse(BaseModel):
+    generated_at: str
+    total_products: int
+    stale_threshold_days: int
+    aging_summary: Dict[str, int]
+    items: List[AgingItem]
+
+
+# --- Suppliers ---
+class SupplierPerformanceItem(BaseModel):
+    supplier_id: int
+    supplier_name: str
+    rating: Optional[int] = None
+    total_orders: int
+    delivered_orders: int
+    pending_orders: int
+    cancelled_orders: int
+    total_revenue: float
+    avg_lead_time_hours: float
+    avg_processing_time_hours: float
+    avg_delivery_time_hours: float
+    sla_breach_count: int
+    sla_compliance_rate: float
+    on_time_delivery_rate: float
+    performance_score: float
+
+
+class SupplierPerformanceResponse(BaseModel):
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    total_suppliers: int
+    generated_at: str
+    suppliers: List[SupplierPerformanceItem]
+
+
+class SupplierScorecardResponse(BaseModel):
+    supplier_id: int
+    supplier_name: str
+    contact_person: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+    rating: Optional[int] = None
+    performance_metrics: Optional[Dict[str, Any]] = None
+    monthly_trend: List[Dict[str, Any]]
+    top_products: List[Dict[str, Any]]
+    generated_at: str
+
+
+# --- Forecast Accuracy ---
+class ForecastAccuracyItem(BaseModel):
+    product_id: int
+    product_name: str
+    sku: str
+    category: Optional[str] = None
+    actual_demand: float
+    predicted_demand: float
+    mae: float
+    mape: float
+    rmse: float
+    accuracy_pct: float
+
+
+class ForecastAccuracyResponse(BaseModel):
+    evaluation_period_start: str
+    evaluation_period_end: str
+    baseline_period_start: str
+    baseline_period_end: str
+    period_days: int
+    total_products: int
+    avg_mae: Optional[float] = None
+    avg_mape: Optional[float] = None
+    avg_rmse: Optional[float] = None
+    avg_accuracy_pct: Optional[float] = None
+    generated_at: str
+    products: List[ForecastAccuracyItem]
+
+
+# --- Operational ---
+class OperationalKPIsResponse(BaseModel):
+    generated_at: str
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    sales_kpis: Dict[str, Any]
+    inventory_kpis: Dict[str, Any]
+    supplier_kpis: Dict[str, Any]
+    sla_kpis: Dict[str, Any]
+    bottleneck_kpis: Dict[str, Any]
+
+
+class SLAStageItem(BaseModel):
+    stage: str
+    breach_count: int
+    breach_rate: float
+    avg_duration_hours: Optional[float] = None
+
+
+class SLAComplianceResponse(BaseModel):
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    total_orders: int
+    total_breaches: int
+    overall_compliance_rate: float
+    avg_stage_durations_hours: Dict[str, float]
+    by_stage: List[SLAStageItem]
+    generated_at: str
+
+
+class BottleneckStageItem(BaseModel):
+    stage: str
+    count: int
+    percentage: float
+    avg_total_time_hours: float
+
+
+class BottleneckReportResponse(BaseModel):
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    total_orders: int
+    total_orders_with_bottleneck: int
+    bottleneck_rate: float
+    by_stage: List[BottleneckStageItem]
+    generated_at: str
+
+
+# --- Export ---
+class ExportResponse(BaseModel):
+    filename: str
+    rows: int
+    generated_at: str
+
