@@ -10,6 +10,7 @@ from app.routes import prediction
 from app.routes import inventory_recommendations
 from app.routes import notifications
 from app.routes import reports
+from app.routes import dashboard
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,6 +51,7 @@ app.include_router(prediction.router)
 app.include_router(inventory_recommendations.router)
 app.include_router(notifications.router)
 app.include_router(reports.router)
+app.include_router(dashboard.router)
 
 @app.get("/", status_code=status.HTTP_200_OK)
 def root():

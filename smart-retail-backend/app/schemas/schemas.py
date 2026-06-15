@@ -805,3 +805,123 @@ class ExportResponse(BaseModel):
     rows: int
     generated_at: str
 
+
+# ============= Dashboard Summary Schemas =============
+
+class SalesKPIsSchema(BaseModel):
+    total_revenue: float
+    revenue_change_pct: Optional[float] = None
+    total_orders: int
+    orders_change_pct: Optional[float] = None
+    avg_order_value: float
+    aov_change_pct: Optional[float] = None
+    total_units_sold: int
+    fulfillment_rate: float
+    fulfillment_change_pct: Optional[float] = None
+    delivered_orders: int
+    cancelled_orders: int
+
+
+class SalesWidgetResponse(BaseModel):
+    period_days: int
+    period_start: str
+    period_end: str
+    kpis: SalesKPIsSchema
+    prior_period: Dict[str, Any]
+    daily_trend_7d: List[Dict[str, Any]]
+    top_categories: List[Dict[str, Any]]
+
+
+class InventoryHealthDistribution(BaseModel):
+    healthy: int
+    low: int
+    critical: int
+    out_of_stock: int
+
+
+class InventoryWidgetResponse(BaseModel):
+    total_skus: int
+    total_available_units: int
+    total_reserved_units: int
+    total_inventory_value: float
+    out_of_stock_count: int
+    critical_stock_count: int
+    low_stock_count: int
+    healthy_stock_count: int
+    recently_restocked_7d: int
+    health_distribution: InventoryHealthDistribution
+    by_warehouse: List[Dict[str, Any]]
+
+
+class SupplierWidgetResponse(BaseModel):
+    period_days: int
+    total_active_suppliers: int
+    avg_performance_score: float
+    avg_sla_compliance: float
+    top_performer: Optional[Dict[str, Any]] = None
+    worst_performer: Optional[Dict[str, Any]] = None
+    suppliers: List[Dict[str, Any]]
+
+
+class ForecastWidgetResponse(BaseModel):
+    period_days: int
+    evaluation_start: str
+    evaluation_end: str
+    total_products_evaluated: int
+    avg_mape: Optional[float] = None
+    avg_accuracy_pct: Optional[float] = None
+    total_actual_demand: float
+    total_predicted_demand: float
+    demand_forecast_error: float
+    products_with_stockout_risk: int
+
+
+class AlertsWidgetResponse(BaseModel):
+    total_active: int
+    total_unread: int
+    critical: int
+    high: int
+    medium: int
+    low: int
+    by_category: Dict[str, int]
+    recent_alerts: List[Dict[str, Any]]
+
+
+class ExecutiveSummarySchema(BaseModel):
+    total_revenue: float
+    revenue_change_pct: Optional[float] = None
+    total_orders: int
+    orders_change_pct: Optional[float] = None
+    fulfillment_rate: float
+    inventory_value: float
+    out_of_stock_count: int
+    active_alerts: int
+    critical_alerts: int
+    avg_supplier_score: float
+    avg_forecast_accuracy: Optional[float] = None
+    avg_sla_compliance: float
+
+
+class ChartDataset(BaseModel):
+    label: str
+    data: List[Any]
+    backgroundColor: Optional[Any] = None
+    borderColor: Optional[str] = None
+
+
+class ChartResponse(BaseModel):
+    chart_type: str
+    title: str
+    labels: List[str]
+    datasets: List[Dict[str, Any]]
+
+
+class MasterDashboardResponse(BaseModel):
+    generated_at: str
+    period_days: int
+    period_start: str
+    period_end: str
+    executive_summary: ExecutiveSummarySchema
+    widgets: Dict[str, Any]
+    charts: Dict[str, Any]
+
