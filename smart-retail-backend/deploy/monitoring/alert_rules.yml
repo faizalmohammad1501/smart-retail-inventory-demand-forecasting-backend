@@ -1,0 +1,76 @@
+# ============================================================
+#  Prometheus Alert Rules — Smart Retail Platform
+# ============================================================
+
+groups:
+
+  # ── API Health ────────────────────────────────────────────
+  - name: api_health
+    rules:
+
+      - alert: APIDown
+        expr: up{job="smart_retail_api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Smart Retail API is DOWN"
+          description: "The API instance {{ $labels.instance }} has been unreachable for > 1 minute."
+
+      - alert: HighErrorRate
+        expr: |
+          rate(http_requests_total{job="smart_retail_api", status=~"5.."}[5m])
+          / rate(http_requests_total{job="smart_retail_api"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error rate (> 5%)"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      - alert: SlowRequests
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket{job="smart_retail_api"}[5m])
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 latency > 2 seconds"
+          description: "95th percentile response time is {{ $value | humanizeDuration }}."
+
+  # ── Resource usage ────────────────────────────────────────
+  - name: resource_usage
+    rules:
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="smart_retail_api"} > 512 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API memory usage > 512 MB"
+          description: "Process is using {{ $value | humanize1024 }}B of resident memory."
+
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes{mountpoint="/"} < 2 * 1024 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space critically low (< 2 GB)"
+          description: "Available disk space: {{ $value | humanize1024 }}B on {{ $labels.instance }}."
+
+  # ── Business KPIs ─────────────────────────────────────────
+  - name: business_kpis
+    rules:
+
+      - alert: MLModelStale
+        expr: time() - smart_retail_ml_model_trained_at > 7 * 24 * 3600
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "ML model not retrained in > 7 days"
+          description: "Last training timestamp is {{ $value | humanizeDuration }} ago."

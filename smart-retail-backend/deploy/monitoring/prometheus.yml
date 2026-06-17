@@ -1,0 +1,49 @@
+# ============================================================
+#  Prometheus Configuration — Smart Retail Platform
+# ============================================================
+
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  scrape_timeout:      10s
+  external_labels:
+    environment: production
+    project: smart_retail
+
+# ── Alert manager ─────────────────────────────────────────────
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# ── Alert rules ───────────────────────────────────────────────
+rule_files:
+  - "alert_rules.yml"
+
+# ── Scrape configs ────────────────────────────────────────────
+scrape_configs:
+
+  # Prometheus self-monitoring
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # FastAPI application metrics (via /metrics — requires prometheus-fastapi-instrumentator)
+  - job_name: smart_retail_api
+    metrics_path: /metrics
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['api:8000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # Nginx metrics (requires nginx-prometheus-exporter sidecar)
+  # - job_name: nginx
+  #   static_configs:
+  #     - targets: ['nginx-exporter:9113']
+
+  # Node / host metrics (requires node_exporter)
+  # - job_name: node
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']

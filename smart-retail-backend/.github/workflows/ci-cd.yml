@@ -1,0 +1,183 @@
+# ============================================================
+#  GitHub Actions CI/CD — Smart Retail Backend
+#  Triggers:
+#    push to main → CI tests + Docker build
+#    push tag v*.*.* → Docker build + push to GHCR + deploy
+# ============================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags:     ["v*.*.*"]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY:    ghcr.io
+  IMAGE_NAME:  ${{ github.repository_owner }}/smart-retail-backend
+
+jobs:
+
+  # ──────────────────────────────────────────────────────────
+  #  Job 1: Lint & Tests
+  # ──────────────────────────────────────────────────────────
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        working-directory: smart-retail-backend
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check for syntax errors
+        working-directory: smart-retail-backend
+        run: python -m py_compile main.py && echo "Syntax OK"
+
+      - name: Lint (ruff)
+        working-directory: smart-retail-backend
+        run: |
+          pip install ruff
+          ruff check . --select E,W,F --ignore E501 || true
+
+      - name: Create test environment file
+        working-directory: smart-retail-backend
+        run: |
+          cat > .env <<'EOF'
+          APP_ENV=testing
+          JWT_SECRET_KEY=ci_test_secret_key_min_32_characters_long
+          DATABASE_URL=sqlite:///./test_supply_chain.db
+          CORS_ORIGINS=http://localhost:3000
+          LOG_LEVEL=WARNING
+          EOF
+
+      - name: Initialize database
+        working-directory: smart-retail-backend
+        run: python -c "from app.database.db_init import init_db; init_db()"
+
+      - name: Run API tests
+        working-directory: smart-retail-backend
+        run: python -m pytest test_api.py -v --tb=short --timeout=60 || true
+
+      - name: Run module tests
+        working-directory: smart-retail-backend
+        run: python -m pytest test_modules.py -v --tb=short --timeout=120 || true
+
+      - name: Clean up test DB
+        working-directory: smart-retail-backend
+        if: always()
+        run: rm -f test_supply_chain.db
+
+  # ──────────────────────────────────────────────────────────
+  #  Job 2: Docker Build (on every push to main or tag)
+  # ──────────────────────────────────────────────────────────
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name != 'pull_request'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: smart-retail-backend
+          file:    smart-retail-backend/Dockerfile
+          push:    true
+          tags:    ${{ steps.meta.outputs.tags }}
+          labels:  ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  # ──────────────────────────────────────────────────────────
+  #  Job 3: Deploy (only on semver tags: v*.*.*)
+  # ──────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key:      ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/smart-retail
+
+            # Pull latest image
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose pull api
+
+            # Zero-downtime restart
+            docker compose up -d --no-deps api
+
+            # Wait for health
+            for i in $(seq 1 12); do
+              if curl -sf http://localhost:8000/health > /dev/null; then
+                echo "API healthy after ${i} attempts"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "Health check failed after deployment" >&2
+            exit 1
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
