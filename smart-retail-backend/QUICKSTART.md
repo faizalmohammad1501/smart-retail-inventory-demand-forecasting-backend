@@ -1,1 +1,157 @@
-# Quick Start Guide - Supply Chain Analytics Backend\n\n## Installation & Setup\n\n### 1. Install Dependencies\n```bash\ncd smart-retail-backend\npip install -r requirements.txt\n```\n\n### 2. Configure Environment\nThe `.env` file is already configured with default settings. Modify if needed:\n- Database URL\n- SLA thresholds\n- API settings\n\n### 3. Start the Server\n```bash\npython main.py\n```\n\nOr with uvicorn:\n```bash\nuvicorn main:app --reload --host 0.0.0.0 --port 8000\n```\n\n### 4. Access API Documentation\n- Swagger UI: http://localhost:8000/docs\n- ReDoc: http://localhost:8000/redoc\n\n### 5. Run Tests\n```bash\n# Start the server first, then in another terminal:\npython test_api.py\n```\n\n## Quick API Usage\n\n### Create Order with Automated Analytics\n```bash\ncurl -X POST \"http://localhost:8000/api/orders/\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"order_number\": \"ORD-2026-0001\",\n    \"product_id\": 1,\n    \"supplier_id\": 1,\n    \"quantity\": 100,\n    \"unit_price\": 50.00,\n    \"order_placed_at\": \"2026-05-27T10:00:00\",\n    \"procurement_completed_at\": \"2026-05-28T16:00:00\",\n    \"processing_completed_at\": \"2026-05-29T10:00:00\",\n    \"dispatched_at\": \"2026-05-29T20:00:00\",\n    \"delivered_at\": \"2026-05-31T14:00:00\",\n    \"status\": \"delivered\"\n  }'\n```\n\n### Get Analytics Summary\n```bash\ncurl \"http://localhost:8000/api/orders/analytics/summary\"\n```\n\n### Get SLA Breaches\n```bash\ncurl \"http://localhost:8000/api/orders/analytics/sla-breaches\"\n```\n\n### Get Forecast Overview\n```bash\ncurl \"http://localhost:8000/api/forecast/overview\"\n```\n\n## Key Features\n\n✅ **Automated Time Calculations** - Calculates all stage durations automatically\n✅ **SLA Validation** - Detects SLA breaches with configurable thresholds\n✅ **Bottleneck Detection** - Identifies stages causing maximum delays\n✅ **Real-time Analytics** - Aggregate metrics and performance insights\n✅ **RESTful API** - Comprehensive endpoints for all operations\n✅ **Data Export** - CSV export for Tableau integration\n✅ **Validation** - Robust lifecycle validation and error handling\n\n## Architecture Highlights\n\n- **Modular Design**: Separated services, utilities, and routes\n- **Preprocessing Pipeline**: Automated analytics before database save\n- **Reusable Components**: Time calculator, SLA validator, bottleneck detector\n- **Scalable Structure**: Easy to extend with new features\n- **Production-Ready**: Error handling, logging, validation\n\n## Next Steps\n\n1. Create suppliers via `/api/suppliers/`\n2. Create products via `/api/products/`\n3. Create orders via `/api/orders/` (analytics calculated automatically)\n4. View analytics via `/api/orders/analytics/summary`\n5. Export data for Tableau visualization\n\n## Troubleshooting\n\n**Server won't start?**\n- Check if port 8000 is already in use\n- Verify all dependencies are installed\n- Check `.env` file configuration\n\n**Database errors?**\n- Database is auto-created on first run\n- Check write permissions in project directory\n\n**Import errors?**\n- Ensure you're in the correct directory\n- Activate virtual environment if using one\n\n## Support\n\nFor issues or questions, check:\n- API Documentation: http://localhost:8000/docs\n- README.md for detailed information\n- Test script: `python test_api.py`\n
+# Smart Retail Platform — Quick Start Guide
+
+## 1. Install & Configure
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment
+cp .env.example .env
+# Edit .env — generate a strong JWT secret:
+#   python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+## 2. Start the Server
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+| URL | Purpose |
+|-----|---------|
+| http://localhost:8000/docs | Swagger UI (interactive API docs) |
+| http://localhost:8000/redoc | ReDoc documentation |
+| http://localhost:8000/health | Liveness probe |
+| http://localhost:8000/health/detailed | Readiness probe (DB + ML + disk) |
+
+---
+
+## 3. Load Demo Data
+
+```bash
+# Seed 3 users · 8 suppliers · 30 products · 200 orders
+python demo_seed.py --reset --verify
+```
+
+**Demo accounts:**
+
+| Username | Password | Role |
+|----------|----------|------|
+| `admin` | `Admin@123` | Full access |
+| `manager` | `Manager@123` | Reports + ops |
+| `analyst` | `Analyst@123` | Read-only |
+
+---
+
+## 4. Run Demo Workflows
+
+```bash
+# All 6 business scenarios end-to-end
+python demo_workflow.py
+
+# Single scenario (1=Inventory, 2=Orders, 3=Forecasting,
+#                  4=Suppliers, 5=Dashboard, 6=Reports)
+python demo_workflow.py --scenario 3
+
+# Live presentation mode (pauses between scenarios)
+python demo_workflow.py --pause
+```
+
+---
+
+## 5. Train the ML Model
+
+```bash
+# 1. Generate synthetic dataset
+curl -X POST http://localhost:8000/api/ml/pipeline/generate \
+  -H "Authorization: Bearer <token>"
+
+# 2. Run preprocessing pipeline
+curl -X POST http://localhost:8000/api/ml/pipeline/run \
+  -H "Authorization: Bearer <token>"
+
+# 3. Train GradientBoosting model
+curl -X POST http://localhost:8000/api/predictions/train \
+  -H "Authorization: Bearer <token>"
+
+# 4. Get 30-day forecast
+curl -X POST http://localhost:8000/api/predictions/forecast \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"product_id": 1, "days": 30}'
+```
+
+---
+
+## 6. Run Tests
+
+```bash
+# Final QA suite — 100+ checks, all modules
+python test_qa.py
+
+# Verbose output (show failures in detail)
+python test_qa.py --verbose
+
+# End-to-end workflow tests
+python test_integration.py
+
+# Module-level tests
+python test_modules.py
+
+# Auth & CRUD baseline
+python test_api.py
+```
+
+---
+
+## 7. Backup & Health Check
+
+```bash
+# CLI health report (DB + ML + disk checks)
+python deploy/healthcheck.py
+
+# Backup DB + ML models + datasets
+python deploy/backup.py --retention 7
+```
+
+---
+
+## 8. Docker (Full Stack)
+
+```bash
+# Start API + Nginx + Prometheus + Grafana
+docker compose up -d
+
+# Tail API logs
+docker compose logs -f api
+
+# Stop everything
+docker compose down
+```
+
+| Service | URL |
+|---------|-----|
+| API | http://localhost:8000/docs |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3001 |
+
+---
+
+## Key Modules
+
+| Module | Base Path |
+|--------|-----------|
+| Auth & RBAC | `/api/auth` |
+| Products & Inventory | `/api/inventory` |
+| Orders & Sales | `/api/sales` |
+| Suppliers | `/api/suppliers` |
+| Analytics (SLA, Bottlenecks) | `/api/analytics` |
+| ML Pipeline | `/api/ml/pipeline` |
+| Demand Forecasting | `/api/predictions` |
+| Inventory Recommendations | `/api/recommendations` |
+| Notifications & Alerts | `/api/notifications` |
+| Business Reports (14) | `/api/reports` |
+| Executive Dashboard | `/api/dashboard` |
+
+See **README.md** for the full API reference and **DEPLOYMENT.md** for production setup.
