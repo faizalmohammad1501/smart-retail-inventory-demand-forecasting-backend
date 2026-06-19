@@ -925,3 +925,212 @@ class MasterDashboardResponse(BaseModel):
     widgets: Dict[str, Any]
     charts: Dict[str, Any]
 
+
+# ══════════════════════════════════════════════════════════════════
+#  Advanced Business Intelligence (BI) Schemas
+# ══════════════════════════════════════════════════════════════════
+
+class BIKPIMetric(BaseModel):
+    """Single KPI with current value, prior value, % change, and trend label."""
+    current:    float
+    prior:      float
+    change_pct: Optional[float] = None
+    trend:      str             # up_good | down_bad | up_bad | neutral
+    unit:       str = ""
+
+
+class BIExecutiveSummaryResponse(BaseModel):
+    period_days:  int
+    period_start: str
+    period_end:   str
+    generated_at: str
+    kpis:         Dict[str, Any]  # keyed by metric name → BIKPIMetric-shaped dict
+
+
+class BITrendSeriesResponse(BaseModel):
+    granularity: str
+    period_days: int
+    labels:      List[str]
+    series:      Dict[str, List[float]]
+
+
+class BIProfitabilityCategoryItem(BaseModel):
+    category:     str
+    revenue:      float
+    cost:         float
+    gross_margin: float
+    margin_pct:   float
+    units_sold:   int
+    orders:       int
+
+
+class BIProfitabilityProductItem(BaseModel):
+    product_id:   int
+    product_name: str
+    category:     str
+    unit_price:   float
+    revenue:      float
+    cost:         float
+    gross_margin: float
+    margin_pct:   float
+    units_sold:   int
+    orders:       int
+
+
+class BIProfitabilityResponse(BaseModel):
+    period_days:  int
+    cogs_ratio:   float
+    summary:      Dict[str, float]
+    by_category:  List[BIProfitabilityCategoryItem]
+    top_products: List[BIProfitabilityProductItem]
+
+
+class BIPeriodMetrics(BaseModel):
+    period_start:     str
+    period_end:       str
+    total_orders:     int
+    total_revenue:    float
+    avg_order_value:  float
+    fill_rate:        float
+    sla_compliance:   float
+    sla_breaches:     int
+    avg_cycle_time_h: float
+
+
+class BIPeriodComparisonItem(BaseModel):
+    current:    float
+    prior:      float
+    change_pct: Optional[float]
+    improved:   bool
+
+
+class BIPeriodComparisonResponse(BaseModel):
+    mode:        str
+    period_days: int
+    current:     Dict[str, Any]
+    prior:       Dict[str, Any]
+    comparison:  Dict[str, BIPeriodComparisonItem]
+
+
+class BIHealthComponent(BaseModel):
+    score:  float
+    max:    int
+    detail: str
+
+
+class BIInventoryHealthResponse(BaseModel):
+    score:      float
+    max_score:  int
+    risk_level: str
+    components: Dict[str, BIHealthComponent]
+    totals:     Dict[str, int]
+
+
+class BISupplierIntelligenceItem(BaseModel):
+    supplier_id:          int
+    supplier_name:        str
+    rating:               int
+    total_orders:         int
+    delivered:            int
+    sla_breaches:         int
+    sla_compliance_rate:  float
+    fill_rate:            float
+    avg_procurement_h:    float
+    avg_total_cycle_h:    float
+    avg_unit_price:       float
+    total_revenue:        float
+    reliability_score:    float
+    speed_label:          str
+    performance_tier:     str
+
+
+class BISupplierIntelligenceResponse(BaseModel):
+    period_days:           int
+    supplier_count:        int
+    avg_reliability_score: float
+    avg_sla_compliance:    float
+    suppliers:             List[BISupplierIntelligenceItem]
+
+
+class BIForecastPerformanceResponse(BaseModel):
+    weeks:               int
+    categories:          List[str]
+    labels:              List[str]
+    total_demand_series: List[int]
+    category_series:     Dict[str, List[int]]
+    demand_stats:        Dict[str, Any]
+
+
+class BIOrderCohortItem(BaseModel):
+    cohort_month:     str
+    total_orders:     int
+    delivered:        int
+    sla_breaches:     int
+    delivery_rate:    float
+    sla_compliance:   float
+    avg_cycle_time_h: float
+    revenue:          float
+
+
+class BIOrderCohortsResponse(BaseModel):
+    months:       int
+    cohort_count: int
+    cohorts:      List[BIOrderCohortItem]
+    trends:       Dict[str, str]
+
+
+class BICategoryDeepDiveItem(BaseModel):
+    category:          str
+    revenue:           float
+    units_sold:        int
+    orders:            int
+    delivered:         int
+    fill_rate:         float
+    sla_compliance:    float
+    avg_cycle_time_h:  float
+    gross_margin:      float
+    margin_pct:        float
+    stock_value:       float
+    product_count:     int
+    top_product:       str
+
+
+class BICategoryDeepDiveResponse(BaseModel):
+    period_days:      int
+    filter_category:  Optional[str]
+    category_count:   int
+    categories:       List[BICategoryDeepDiveItem]
+
+
+class BIStageEfficiency(BaseModel):
+    avg_actual_h:      float
+    sla_threshold_h:   int
+    pct_of_sla:        float
+    within_sla:        bool
+    status:            str  # on_track | at_risk | breached
+
+
+class BIBottleneckItem(BaseModel):
+    stage:     str
+    count:     int
+    frequency: float
+
+
+class BIBreachBySupplier(BaseModel):
+    supplier_name: str
+    total_orders:  int
+    breaches:      int
+    breach_rate:   float
+
+
+class BIOperationalEfficiencyResponse(BaseModel):
+    period_days:          int
+    total_orders:         int
+    total_sla_breaches:   int
+    overall_sla_rate:     float
+    avg_total_cycle_h:    float
+    worst_bottleneck:     str
+    stage_benchmarks:     Dict[str, BIStageEfficiency]
+    bottleneck_heatmap:   List[BIBottleneckItem]
+    breach_by_supplier:   List[BIBreachBySupplier]
+

@@ -24,6 +24,7 @@ from app.routes import inventory_recommendations
 from app.routes import notifications
 from app.routes import reports
 from app.routes import dashboard
+from app.routes import bi_routes
 
 logger = logging.getLogger("smart_retail")
 
@@ -62,7 +63,8 @@ app = FastAPI(
         "- Smart Inventory Recommendations\n"
         "- Notification & Alert Automation\n"
         "- Reporting & Business Insights\n"
-        "- Executive Dashboard & CSV/PDF Exports\n\n"
+        "- Executive Dashboard & CSV/PDF Exports\n"
+        "- Advanced Business Intelligence (BI)\n\n"
         "All endpoints require a **Bearer token** — register via `/api/auth/register` "
         "then login via `/api/auth/login`."
     ),
@@ -113,6 +115,7 @@ app.include_router(inventory_recommendations.router)
 app.include_router(notifications.router)
 app.include_router(reports.router)
 app.include_router(dashboard.router)
+app.include_router(bi_routes.router)
 
 
 # ── System endpoints ──────────────────────────────────────────────────────────
