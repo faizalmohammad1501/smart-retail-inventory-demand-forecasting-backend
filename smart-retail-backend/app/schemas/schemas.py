@@ -1,6 +1,34 @@
 from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Any, Dict, List, Optional, Literal
 from datetime import datetime
+import re
+
+# ── Shared validators ──────────────────────────────────────────────────────────
+
+_SAFE_NAME_RE = re.compile(r"^[\w\s\-\.\,\'\&\/\(\)]+$")   # printable, no HTML/SQL
+_SKU_RE       = re.compile(r"^[A-Za-z0-9\-_]+$")           # alphanumeric + hyphens/underscores
+
+
+def _strong_password(v: str) -> str:
+    """Enforce: uppercase, lowercase, digit, special character, min-length 8."""
+    if not any(c.isupper() for c in v):
+        raise ValueError("Password must contain at least one uppercase letter")
+    if not any(c.islower() for c in v):
+        raise ValueError("Password must contain at least one lowercase letter")
+    if not any(c.isdigit() for c in v):
+        raise ValueError("Password must contain at least one digit")
+    if not any(c in r"!@#$%^&*()-_=+[]{}|;:',.<>?/`~" for c in v):
+        raise ValueError("Password must contain at least one special character")
+    return v
+
+
+def _safe_name(v: str, field: str = "field") -> str:
+    """Strip leading/trailing whitespace; reject HTML/script content."""
+    v = v.strip()
+    if re.search(r"[<>\"\'\\;]", v):
+        raise ValueError(f"{field} contains disallowed characters")
+    return v
+
 
 # ============= User Schemas =============
 class UserBase(BaseModel):
@@ -9,6 +37,14 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     role: str = "user"
 
+    @field_validator("username")
+    @classmethod
+    def username_safe(cls, v: str) -> str:
+        v = v.strip()
+        if not re.match(r"^[A-Za-z0-9_\-\.]+$", v):
+            raise ValueError("Username may only contain letters, digits, hyphens, underscores, and dots")
+        return v.lower()
+
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, max_length=128)
@@ -16,20 +52,16 @@ class UserCreate(UserBase):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
-        return v
+        return _strong_password(v)
 
 
 class UserLogin(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=1, max_length=100)
+    password: str = Field(..., min_length=1, max_length=128)
 
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str] = None
+    full_name: Optional[str] = Field(None, max_length=255)
     email: Optional[str] = Field(None, min_length=5, max_length=255)
 
 
@@ -40,11 +72,7 @@ class ChangePassword(BaseModel):
     @field_validator("new_password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
-        return v
+        return _strong_password(v)
 
 
 class UserResponse(UserBase):
@@ -77,13 +105,18 @@ class TokenData(BaseModel):
 # ============= Supplier Schemas =============
 class SupplierBase(BaseModel):
     supplier_name: str = Field(..., min_length=2, max_length=255)
-    contact_person: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    country: Optional[str] = None
+    contact_person: Optional[str] = Field(None, max_length=255)
+    email: Optional[str] = Field(None, max_length=255)
+    phone: Optional[str] = Field(None, max_length=50)
+    address: Optional[str] = Field(None, max_length=500)
+    city: Optional[str] = Field(None, max_length=100)
+    country: Optional[str] = Field(None, max_length=100)
     rating: Optional[int] = Field(None, ge=1, le=5)
+
+    @field_validator("supplier_name")
+    @classmethod
+    def supplier_name_safe(cls, v: str) -> str:
+        return _safe_name(v, "supplier_name")
 
 class SupplierCreate(SupplierBase):
     pass
@@ -91,7 +124,7 @@ class SupplierCreate(SupplierBase):
 class SupplierResponse(SupplierBase):
     id: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -99,11 +132,24 @@ class SupplierResponse(SupplierBase):
 class ProductBase(BaseModel):
     product_name: str = Field(..., min_length=2, max_length=255)
     sku: str = Field(..., min_length=2, max_length=100)
-    category: Optional[str] = None
-    description: Optional[str] = None
-    unit_price: float = Field(..., gt=0)
-    supplier_id: Optional[int] = None
-    reorder_level: int = Field(default=10, ge=0)
+    category: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    unit_price: float = Field(..., gt=0, le=1_000_000)
+    supplier_id: Optional[int] = Field(None, ge=1)
+    reorder_level: int = Field(default=10, ge=0, le=100_000)
+
+    @field_validator("sku")
+    @classmethod
+    def sku_format(cls, v: str) -> str:
+        v = v.strip().upper()
+        if not _SKU_RE.match(v):
+            raise ValueError("SKU may only contain letters, digits, hyphens, and underscores")
+        return v
+
+    @field_validator("product_name")
+    @classmethod
+    def product_name_safe(cls, v: str) -> str:
+        return _safe_name(v, "product_name")
 
 class ProductCreate(ProductBase):
     pass

@@ -16,6 +16,8 @@ from app.middleware.error_handler import (
     http_exception_handler,
 )
 from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.middleware.rate_limiter import rate_limiting_middleware
+from app.middleware.request_validator import request_size_middleware
 from app.routes import sales, suppliers, inventory, forecast, auth
 from app.routes import ml_pipeline
 from app.routes import analytics_routes
@@ -86,7 +88,13 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=logging_middleware)
 # 3. Global exception catch-all (innermost)
 app.add_middleware(BaseHTTPMiddleware, dispatch=error_handling_middleware)
 
-# 4. CORS
+# 4. Rate limiting — enforce per-IP sliding-window limits
+app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limiting_middleware)
+
+# 5. Request size guard — reject bodies > MAX_REQUEST_SIZE_BYTES
+app.add_middleware(BaseHTTPMiddleware, dispatch=request_size_middleware)
+
+# 6. CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list if settings.is_production else ["*"],

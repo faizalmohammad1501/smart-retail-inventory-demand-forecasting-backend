@@ -23,6 +23,15 @@ class Settings(BaseSettings):
 
     # ── Rate limiting (requests per minute per IP) ────────────────────────────
     RATE_LIMIT_PER_MINUTE: int = 120
+    LOGIN_RATE_LIMIT_PER_MINUTE: int = 5      # tighter limit for auth endpoints
+    REGISTER_RATE_LIMIT_PER_MINUTE: int = 10
+
+    # ── Request validation ────────────────────────────────────────────────────
+    MAX_REQUEST_SIZE_BYTES: int = 1_048_576   # 1 MB
+
+    # ── Caching ───────────────────────────────────────────────────────────────
+    CACHE_DEFAULT_TTL_SECONDS: int = 300      # 5 min
+    CACHE_SWEEP_INTERVAL_SECONDS: int = 60
 
     @property
     def cors_origins_list(self) -> List[str]:

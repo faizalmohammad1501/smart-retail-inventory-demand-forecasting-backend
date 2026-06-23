@@ -126,6 +126,7 @@ def full_health_check(db: Session) -> Dict[str, Any]:
         "ml_model": check_ml_model(),
         "ml_datasets": check_ml_datasets(),
         "disk": check_disk_space(),
+        "cache": _check_cache(),
     }
 
     # Critical: database must be healthy
@@ -139,3 +140,13 @@ def full_health_check(db: Session) -> Dict[str, Any]:
         "system": get_system_info(),
         "checks": checks,
     }
+
+
+def _check_cache() -> Dict[str, Any]:
+    """Return in-process cache statistics."""
+    try:
+        from app.core.cache import cache
+        stats = cache.stats()
+        return {"status": "healthy", **stats}
+    except Exception as exc:
+        return {"status": "unknown", "error": str(exc)}

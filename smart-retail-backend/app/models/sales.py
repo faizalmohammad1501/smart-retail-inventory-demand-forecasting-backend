@@ -1,10 +1,18 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Index
 from sqlalchemy.sql import func
 from app.database.connection import Base
 
 class Order(Base):
     __tablename__ = "orders"
-    
+
+    # Composite indexes for the most common query patterns
+    __table_args__ = (
+        Index("ix_orders_product_status", "product_id", "status"),
+        Index("ix_orders_placed_at_status", "order_placed_at", "status"),
+        Index("ix_orders_supplier_placed", "supplier_id", "order_placed_at"),
+        Index("ix_orders_sla_breach", "sla_breach", "order_placed_at"),
+    )
+
     id = Column(Integer, primary_key=True, index=True)
     order_number = Column(String(100), unique=True, nullable=False, index=True)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
