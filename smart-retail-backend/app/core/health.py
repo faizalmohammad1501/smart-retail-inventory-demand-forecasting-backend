@@ -122,11 +122,12 @@ def full_health_check(db: Session) -> Dict[str, Any]:
     start = time.perf_counter()
 
     checks = {
-        "database": check_database(db),
-        "ml_model": check_ml_model(),
+        "database":    check_database(db),
+        "ml_model":    check_ml_model(),
         "ml_datasets": check_ml_datasets(),
-        "disk": check_disk_space(),
-        "cache": _check_cache(),
+        "disk":        check_disk_space(),
+        "cache":       _check_cache(),
+        "metrics":     _check_metrics(),
     }
 
     # Critical: database must be healthy
@@ -148,5 +149,22 @@ def _check_cache() -> Dict[str, Any]:
         from app.core.cache import cache
         stats = cache.stats()
         return {"status": "healthy", **stats}
+    except Exception as exc:
+        return {"status": "unknown", "error": str(exc)}
+
+
+def _check_metrics() -> Dict[str, Any]:
+    """Return a lightweight metrics snapshot for the health endpoint."""
+    try:
+        from app.core.metrics import metrics
+        snap = metrics.snapshot()
+        return {
+            "status":          "healthy",
+            "uptime_seconds":  snap["uptime_seconds"],
+            "total_requests":  snap["http"]["total_requests"],
+            "total_errors":    snap["http"]["total_errors"],
+            "error_rate_pct":  snap["http"]["error_rate_pct"],
+            "active_requests": snap["http"]["active_requests"],
+        }
     except Exception as exc:
         return {"status": "unknown", "error": str(exc)}

@@ -5,6 +5,7 @@ from app.models.product import Product
 from app.models.inventory import Inventory
 from app.models.sales import Order
 from app.models.notification import Notification
+from app.models.audit_log import AuditLog  # must import so Base sees the model
 
 def init_db():
     """Initialize database tables"""

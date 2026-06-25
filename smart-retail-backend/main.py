@@ -18,6 +18,7 @@ from app.middleware.error_handler import (
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.rate_limiter import rate_limiting_middleware
 from app.middleware.request_validator import request_size_middleware
+from app.middleware.audit_middleware import ObservabilityMiddleware
 from app.routes import sales, suppliers, inventory, forecast, auth
 from app.routes import ml_pipeline
 from app.routes import analytics_routes
@@ -27,6 +28,8 @@ from app.routes import notifications
 from app.routes import reports
 from app.routes import dashboard
 from app.routes import bi_routes
+from app.routes import audit
+from app.routes import metrics as metrics_routes
 
 logger = logging.getLogger("smart_retail")
 
@@ -94,7 +97,10 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limiting_middleware)
 # 5. Request size guard — reject bodies > MAX_REQUEST_SIZE_BYTES
 app.add_middleware(BaseHTTPMiddleware, dispatch=request_size_middleware)
 
-# 6. CORS
+# 6. Observability — metrics recording + audit log enqueueing
+app.add_middleware(ObservabilityMiddleware)
+
+# 7. CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list if settings.is_production else ["*"],
@@ -124,6 +130,8 @@ app.include_router(notifications.router)
 app.include_router(reports.router)
 app.include_router(dashboard.router)
 app.include_router(bi_routes.router)
+app.include_router(audit.router)
+app.include_router(metrics_routes.router)
 
 
 # ── System endpoints ──────────────────────────────────────────────────────────
@@ -148,6 +156,8 @@ def root():
             "Notifications               /api/notifications/",
             "Reporting                   /api/reports/",
             "Dashboard & Exports         /api/dashboard/",
+            "Audit Logs                  /api/audit/",
+            "Metrics & Performance       /api/metrics/",
         ],
         "docs": {
             "swagger": "/docs",
