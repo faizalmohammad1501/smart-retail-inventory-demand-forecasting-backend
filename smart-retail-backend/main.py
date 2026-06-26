@@ -19,6 +19,7 @@ from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.rate_limiter import rate_limiting_middleware
 from app.middleware.request_validator import request_size_middleware
 from app.middleware.audit_middleware import ObservabilityMiddleware
+from app.middleware.api_key_middleware import APIKeyRateLimitMiddleware
 from app.routes import sales, suppliers, inventory, forecast, auth
 from app.routes import ml_pipeline
 from app.routes import analytics_routes
@@ -30,6 +31,7 @@ from app.routes import dashboard
 from app.routes import bi_routes
 from app.routes import audit
 from app.routes import metrics as metrics_routes
+from app.routes import api_keys
 
 logger = logging.getLogger("smart_retail")
 
@@ -100,7 +102,10 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=request_size_middleware)
 # 6. Observability — metrics recording + audit log enqueueing
 app.add_middleware(ObservabilityMiddleware)
 
-# 7. CORS
+# 7. API key per-key rate limiter (sliding window, keyed on X-API-Key)
+app.add_middleware(APIKeyRateLimitMiddleware)
+
+# 8. CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list if settings.is_production else ["*"],
@@ -132,6 +137,7 @@ app.include_router(dashboard.router)
 app.include_router(bi_routes.router)
 app.include_router(audit.router)
 app.include_router(metrics_routes.router)
+app.include_router(api_keys.router)
 
 
 # ── System endpoints ──────────────────────────────────────────────────────────
@@ -158,6 +164,7 @@ def root():
             "Dashboard & Exports         /api/dashboard/",
             "Audit Logs                  /api/audit/",
             "Metrics & Performance       /api/metrics/",
+            "API Key Management          /api/keys/",
         ],
         "docs": {
             "swagger": "/docs",
