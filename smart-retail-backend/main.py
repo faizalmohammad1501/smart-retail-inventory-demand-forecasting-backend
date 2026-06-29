@@ -32,6 +32,7 @@ from app.routes import bi_routes
 from app.routes import audit
 from app.routes import metrics as metrics_routes
 from app.routes import api_keys
+from app.routes import insights
 
 logger = logging.getLogger("smart_retail")
 
@@ -138,6 +139,7 @@ app.include_router(bi_routes.router)
 app.include_router(audit.router)
 app.include_router(metrics_routes.router)
 app.include_router(api_keys.router)
+app.include_router(insights.router)
 
 
 # ── System endpoints ──────────────────────────────────────────────────────────
@@ -165,6 +167,7 @@ def root():
             "Audit Logs                  /api/audit/",
             "Metrics & Performance       /api/metrics/",
             "API Key Management          /api/keys/",
+            "AI Insights & Decisions     /api/insights/",
         ],
         "docs": {
             "swagger": "/docs",
