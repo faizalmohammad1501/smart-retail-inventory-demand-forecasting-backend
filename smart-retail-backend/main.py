@@ -33,6 +33,7 @@ from app.routes import audit
 from app.routes import metrics as metrics_routes
 from app.routes import api_keys
 from app.routes import insights
+from app.routes import inventory_optimization
 
 logger = logging.getLogger("smart_retail")
 
@@ -140,6 +141,7 @@ app.include_router(audit.router)
 app.include_router(metrics_routes.router)
 app.include_router(api_keys.router)
 app.include_router(insights.router)
+app.include_router(inventory_optimization.router)
 
 
 # ── System endpoints ──────────────────────────────────────────────────────────
@@ -168,6 +170,7 @@ def root():
             "Metrics & Performance       /api/metrics/",
             "API Key Management          /api/keys/",
             "AI Insights & Decisions     /api/insights/",
+            "Inventory Optimization      /api/optimization/",
         ],
         "docs": {
             "swagger": "/docs",
