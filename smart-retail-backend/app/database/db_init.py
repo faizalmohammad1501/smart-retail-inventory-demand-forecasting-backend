@@ -7,6 +7,8 @@ from app.models.sales import Order
 from app.models.notification import Notification
 from app.models.audit_log import AuditLog  # must import so Base sees the model
 from app.models.api_key import APIKey      # must import so Base sees the model
+from app.models.forecast_evaluation import ForecastEvaluation  # must import so Base sees the model
+from app.models.model_version import ModelVersion              # must import so Base sees the model
 
 def init_db():
     """Initialize database tables"""
