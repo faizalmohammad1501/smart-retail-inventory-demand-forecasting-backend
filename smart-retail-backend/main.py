@@ -35,6 +35,7 @@ from app.routes import api_keys
 from app.routes import insights
 from app.routes import inventory_optimization
 from app.routes import forecast_monitoring
+from app.routes import inventory_simulation
 
 logger = logging.getLogger("smart_retail")
 
@@ -144,6 +145,7 @@ app.include_router(api_keys.router)
 app.include_router(insights.router)
 app.include_router(inventory_optimization.router)
 app.include_router(forecast_monitoring.router)
+app.include_router(inventory_simulation.router)
 
 
 # ── System endpoints ──────────────────────────────────────────────────────────
@@ -174,6 +176,7 @@ def root():
             "AI Insights & Decisions     /api/insights/",
             "Inventory Optimization      /api/optimization/",
             "Forecast Model Monitoring   /api/forecast-monitor/",
+            "Inventory Simulation        /api/simulation/",
         ],
         "docs": {
             "swagger": "/docs",
